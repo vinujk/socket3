@@ -1,21 +1,21 @@
-extern int get_nexthop(const char *, const char *nh_ip);
+#define PATH_MSG_TYPE               1   // RSVP-TE PATH Message Type
+#define RESV_MSG_TYPE               2   // RSVP-TE RESV Message Type
 
-#define PATH_MSG_TYPE 1   // RSVP-TE PATH Message Type
-#define RESV_MSG_TYPE 2   // RSVP-TE RESV Message Type
+#define IP_ADDRLEN                  16
 
-#define SESSION 1
-#define HOP 3
-#define TIME 5
-#define FILTER_SPEC 10
-#define SENDER_TEMPLATE 11
-#define RSVP_LABEL 16
-#define LABEL_REQUEST 19
-#define EXPLICIT_ROUTE 20
-#define RECORD_ROUTE 21
-#define HELLO 22
-#define SESSION_ATTRIBUTE 207
+#define SESSION                     1
+#define HOP                         3
+#define TIME                        5
+#define FILTER_SPEC                 10
+#define SENDER_TEMPLATE             11
+#define RSVP_LABEL                  16
+#define LABEL_REQUEST               19
+#define EXPLICIT_ROUTE              20
+#define RECORD_ROUTE                21
+#define HELLO                       22
+#define SESSION_ATTRIBUTE           207
+#define IP                          20
 
-#define IP 20
 #define START_SENT_CLASS_OBJ (sizeof(struct rsvp_header))
 #define START_RECV_CLASS_OBJ (IP + START_SENT_CLASS_OBJ)
 
@@ -39,7 +39,7 @@ extern int get_nexthop(const char *, const char *nh_ip);
 
 #define START_SENT_FILTER_SPEC_OBJ (START_SENT_TIME_OBJ + sizeof(struct Filter_spec_object))
 #define START_RECV_FILTER_SPEC_OBJ (IP + START_SENT_FILTER_SPEC_OBJ)
- 
+
 #define START_SENT_LABEL (START_SENT_FILTER_SPEC_OBJ + sizeof(struct label_object))
 #define START_RECV_LABEL (IP + START_SENT_LABEL) 
 
@@ -118,6 +118,14 @@ struct label_object {
     uint32_t label;
 };
 
+// Style Object for RESV message
+struct style_object {
+    struct class_obj class_obj;
+    uint16_t flags;
+    uint16_t reserved;
+    uint32_t style;
+};
+
 //Filter Spec Object for RESV Message
 struct Filter_spec_object {
     struct class_obj class_obj;
@@ -129,10 +137,12 @@ struct Filter_spec_object {
 
 
 
-void send_path_message(int, struct in_addr, struct in_addr);
-void send_resv_message(int, struct in_addr, struct in_addr);
+void send_path_message(int, struct in_addr, struct in_addr, uint16_t);
+void send_resv_message(int, struct in_addr, struct in_addr, uint16_t);
 void receive_resv_message(int, char[], struct sockaddr_in);
 void receive_path_message(int, char[], struct sockaddr_in);
 void get_resv_class_obj(int[]);
 void get_path_class_obj(int[]);
-
+int dst_reached(char []);
+void get_ip(char[], char[], char [], uint16_t *);
+extern int get_nexthop(const char *, const char *);
