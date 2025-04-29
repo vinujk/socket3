@@ -638,6 +638,6 @@ db_node* resv_tree_insert(db_node* resv_tree, char buffer[], struct in_addr p_nh
            	    p->IFH = ifh;
               }
         }
-        return insert_node(resv_tree, p, compare_resv_insert, 0);
     }
+    return insert_node(resv_tree, p, compare_resv_insert, 0);
 }

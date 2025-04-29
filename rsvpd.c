@@ -197,7 +197,7 @@ int main() {
     struct session* temp = NULL;
 
 
-    char srcip[16], dstip[16], nhip[16], sender_ip[16], receiver_ip[16];;
+    char Srcip[16], srcip[16], dstip[16], nhip[16], sender_ip[16], receiver_ip[16];;
     uint16_t tunnel_id;
     int explicit = 0;
     struct sockaddr_in addr;
@@ -258,8 +258,8 @@ int main() {
             } else {
 		inet_pton(AF_INET, nhip, &path->nexthop_ip);
 		inet_pton(AF_INET, "0.0.0.0", &path->p_srcip);
-  		if(get_srcip(nhip, srcip, &ifh)) {
-                	inet_pton(AF_INET, srcip, &path->e_srcip);
+  		if(get_srcip(nhip, Srcip, &ifh)) {
+                	inet_pton(AF_INET, Srcip, &path->e_srcip);
 			path->IFH = ifh;
 		}
             }
@@ -305,15 +305,15 @@ int main() {
         int bytes_received = recvfrom(sock, buffer, sizeof(buffer), 0,
                                       (struct sockaddr*)&sender_addr, &addr_len);
         if (bytes_received < 0) {
-            log_message("Receive failed");
+            printf("Receive failed");
             continue;
         }
-        log_message("Received bytes in receive_thread");
+        printf("Received bytes in receive_thread");
         struct rsvp_header* rsvp = (struct rsvp_header*)(buffer + IP);
         char sender_ip[16], receiver_ip[16];
         uint16_t tunnel_id;
 
-        log_message("Mutex locked in receive_thread");
+        printf("Mutex locked in receive_thread");
         switch (rsvp->msg_type) {
             case PATH_MSG_TYPE:
 
@@ -321,10 +321,10 @@ int main() {
                 resv_event_handler();
 
                 // get ip from the received path packet
-                log_message(" in path msg type\n");
+                printf(" in path msg type\n");
                 get_ip(buffer, sender_ip, receiver_ip, &tunnel_id);
 		if((reached = dst_reached(receiver_ip)) == -1) {
-                	log_message(" No route to destiantion %s\n",receiver_ip);
+                	printf(" No route to destiantion %s\n",receiver_ip);
                         return;
                 }
 
@@ -336,7 +336,7 @@ int main() {
 	               	path_head = insert_session(path_head, tunnel_id, sender_ip, receiver_ip, reached);
  			pthread_mutex_unlock(&path_list_mutex);
 			if(path_head == NULL) {
-				log_message("insert for tunnel %d failed", tunnel_id);
+				printf("insert for tunnel %d failed", tunnel_id);
 				return;
 			}
 		}
@@ -352,10 +352,10 @@ int main() {
                 path_event_handler();
 
                 //get ip from the received resv msg
-                log_message(" in resv msg type\n");
+                printf(" in resv msg type\n");
 		/*get_ip(buffer, sender_ip, receiver_ip, &tunnel_id);
 		if((reached = dst_reached(sender_ip)) == -1) {
-	                log_message(" No route to destiantion %s\n",sender_ip);
+	                printf(" No route to destiantion %s\n",sender_ip);
                         return;
                 }
                 
@@ -364,7 +364,7 @@ int main() {
                 if(temp == NULL) {
                         resv_head = insert_session(resv_head, tunnel_id, sender_ip, receiver_ip, reached);
 			if(resv_head == NULL) {
-				log_message("insert for tunnel %d failed", tunnel_id);
+				printf("insert for tunnel %d failed", tunnel_id);
                                	return;	
 			}
                 }
@@ -379,10 +379,10 @@ int main() {
 
                 char msg[64];
                 snprintf(msg, sizeof(msg), "Unknown RSVP message type: %d", rsvp->msg_type);
-                log_message(msg);
+                printf(msg);
 	    }
         }
-        log_message("Mutex unlocking in receive_thread");
+        printf("Mutex unlocking in receive_thread");
     }
     return NULL;
 }

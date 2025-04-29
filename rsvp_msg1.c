@@ -7,8 +7,8 @@
 #include <netinet/ip.h>
 #include "rsvp_msg.h"
 
-char nhip[16];
-extern char src_ip[16], route[16];
+#define IP_ADDRLEN 16
+extern char nhip[16];
 
 // Function to send an RSVP-TE RESV message with label assignment
 void send_resv_message(int sock, struct in_addr sender_ip, struct in_addr receiver_ip) {
@@ -16,7 +16,7 @@ void send_resv_message(int sock, struct in_addr sender_ip, struct in_addr receiv
     char resv_packet[256];
 
     struct rsvp_header *resv = (struct rsvp_header*)resv_packet;
-//    struct class_obj *class_obj = (struct class_obj*)(resv_packet + sizeof(struct rsvp_header));
+    //struct class_obj *class_obj = (struct class_obj*)(resv_packet + sizeof(struct rsvp_header));
     struct session_object *session_obj = (struct session_object*)(resv_packet + START_SENT_SESSION_OBJ);
     struct hop_object *hop_obj = (struct hop_object*)(resv_packet + START_SENT_HOP_OBJ);
     struct time_object *time_obj = (struct time_object*)(resv_packet + START_SENT_TIME_OBJ);
@@ -37,7 +37,6 @@ void send_resv_message(int sock, struct in_addr sender_ip, struct in_addr receiv
     session_obj->class_obj.c_type = 7;
     session_obj->class_obj.length = htons(sizeof(struct session_object));
     session_obj->dst_ip = receiver_ip;
-    //inet_pton(AF_INET, receiver_ip, &session_obj->dst_ip); 
     session_obj->tunnel_id = 1;
     session_obj->src_ip = sender_ip;
 
@@ -45,9 +44,8 @@ void send_resv_message(int sock, struct in_addr sender_ip, struct in_addr receiv
     hop_obj->class_obj.class_num = 3;
     hop_obj->class_obj.c_type = 1;
     hop_obj->class_obj.length = htons(sizeof(struct hop_object));
-    get_nexthop(inet_ntoa(sender_ip), nhip);
+    get_nexthop(inet_ntoa(sender_ip), nhip); //ip->dst_ip, ip->nhip);
     inet_pton(AF_INET, nhip, &hop_obj->next_hop);
-    //hop_obj->next_hop = receiver_ip; //dummy
     hop_obj->IFH = 123; //dummy
 
     time_obj->class_obj.class_num = 5;
@@ -63,7 +61,7 @@ void send_resv_message(int sock, struct in_addr sender_ip, struct in_addr receiv
 
     // Set destination (ingress router)
     dest_addr.sin_family = AF_INET;
-    dest_addr.sin_addr = hop_obj->next_hop;
+    dest_addr.sin_addr = sender_ip;
     dest_addr.sin_port = 0;
 
     // Send RESV message
@@ -71,7 +69,7 @@ void send_resv_message(int sock, struct in_addr sender_ip, struct in_addr receiv
                (struct sockaddr*)&dest_addr, sizeof(dest_addr)) < 0) {
         perror("Send failed");
     } else {
-        printf("Sent RESV message to %s with Label 1001\n", inet_ntoa(hop_obj->next_hop));
+        printf("Sent RESV message to %s with Label 1001\n", inet_ntoa(sender_ip));
     }
 }
 
@@ -96,38 +94,13 @@ void receive_path_message(int sock, char buffer[], struct sockaddr_in sender_add
 	struct rsvp_header *rsvp = (struct rsvp_header*)(buffer+20);
         printf("Received PATH message from %s\n", inet_ntoa(sender_addr.sin_addr));
 
-        struct session_object *temp = (struct session_object*)(buffer+START_RECV_SESSION_OBJ);
-        printf(" %s   %s\n", inet_ntoa(temp->src_ip), inet_ntoa(temp->dst_ip));   
-      
-        struct in_addr sender_ip = temp->src_ip; //rsvp->sender_ip;
-        struct in_addr receiver_ip = temp->dst_ip; //rsvp->receiver_ip;
+        /*struct in_addr sender_ip = rsvp->sender_ip;
+        struct in_addr receiver_ip = rsvp->receiver_ip;
 
         memset(class_obj_arr, 0, sizeof(class_obj_arr));
  	get_path_class_obj(class_obj_arr);
-
-	get_nexthop(inet_ntoa(receiver_ip), nhip);
-	if(strcmp(nhip, " ") == 0) {
-		printf("reached the destiantion end os rsvp tunnel\n");
-		send_resv_message(sock, sender_ip, receiver_ip);
-	} else {
-		printf("send path msg nexthop is %s destination not reached\n", nhip);
-		send_path_message(sock, sender_ip, receiver_ip);
-	}
-		
-		
-	//printf("route = %s, nhip = %s, srcip = %s\n", route,inet_ntoa(receiver_ip),src_ip);
-	//if(strcmp(inet_ntoa(receiver_ip),src_ip) == 0)
-        //		printf("====== destination reached\n");
-	/*if(dst_reached()) { //chk we have reached the dst or not
-	        // update path table, resv table, chk lael req, geneate label and send Resv msg.
-		send_resv_message()
-        } else {
-                // update nexthop, path table and send Path msg
-                send_path_message();
-        }*/
-
         
-	/*while(class_obj_arr[i] != 0) {
+	while(class_obj_arr[i] != 0) {
 		class_obj = (struct class_obj*) (buffer + class_obj_arr[i]);
 		switch(class_obj->class_num) {
 			case SESSION:
@@ -160,7 +133,7 @@ void receive_path_message(int sock, char buffer[], struct sockaddr_in sender_add
 //Function to send PATH message for label request
 void send_path_message(int sock, struct in_addr sender_ip, struct in_addr receiver_ip) {
     struct sockaddr_in dest_addr;
-    char path_packet[256];
+    char path_packet[256]; // = packet;// + sizeof(struct iphdr);
 
     struct rsvp_header *path = (struct rsvp_header*)path_packet;
     //struct class_obj *class_obj = (struct class_obj*)(path_packet + START_SENT_CLASS_OBJ); 
@@ -186,18 +159,15 @@ void send_path_message(int sock, struct in_addr sender_ip, struct in_addr receiv
     session_obj->class_obj.c_type = 7;
     session_obj->class_obj.length = htons(sizeof(struct session_object));
     session_obj->dst_ip = receiver_ip;
-    //inet_pton(AF_INET, receiver_ip, &session_obj->dst_ip); 
     session_obj->tunnel_id = 1;
     session_obj->src_ip = sender_ip;
-    //inet_pton(AF_INET, sender_ip, &session_obj->src_ip);
 
     //hop object for PATH and RESV msg
     hop_obj->class_obj.class_num = 3;
     hop_obj->class_obj.c_type = 1;
     hop_obj->class_obj.length = htons(sizeof(struct hop_object));
-    get_nexthop(inet_ntoa(receiver_ip), nhip);	
+    get_nexthop(inet_ntoa(receiver_ip), nhip); //ip->dst_ip, ip->nhip);
     inet_pton(AF_INET, nhip, &hop_obj->next_hop);
-//    hop_obj->next_hop = receiver_ip; //dummy
     hop_obj->IFH = 123; //dummy
 
     time_obj->class_obj.class_num = 5;
@@ -237,7 +207,7 @@ void send_path_message(int sock, struct in_addr sender_ip, struct in_addr receiv
 
      printf(" sending message1 = %d\n",sock);
     // Send PATH message
-    if (sendto(sock, path_packet, sizeof(path_packet), 0, 
+    if (sendto(sock, path_packet, sizeof(path_packet), 0,
                (struct sockaddr*)&dest_addr, sizeof(dest_addr)) < 0) {
         perror("Send failed");
     } else {
@@ -269,14 +239,7 @@ void receive_resv_message(int sock, char buffer[], struct sockaddr_in sender_add
     memset(class_obj_arr, 0, sizeof(class_obj_arr));
     get_resv_class_obj(class_obj_arr);
     struct label_object *label_obj;
-   
-    /*if(dst_reached()) { //chk we have reached the dst or not
-             // storE label in resv table
-    } else {
-             // get the nexthop, storE label n resv table and generate & send label 
-             send_resv_message
-    }*/
- 
+    
     while(class_obj_arr[i] != 0) {
 	class_obj = (struct class_obj*) (buffer + class_obj_arr[i]);
     	switch(class_obj->class_num) {
@@ -297,5 +260,18 @@ void receive_resv_message(int sock, char buffer[], struct sockaddr_in sender_add
         }
 	i++;
     } 
+}
+
+
+
+//get src and dst ip from session object
+void get_ip(char buffer[], char *sender_ip, char *receiver_ip) {
+
+        struct session_object *temp = (struct session_object*)(buffer+START_RECV_SESSION_OBJ);
+        //inet_pton(AF_INET, "192.168.13.2", &sender_ip);
+        inet_ntop(AF_INET, &temp->src_ip, sender_ip, IP_ADDRLEN);
+        inet_ntop(AF_INET, &temp->dst_ip, receiver_ip, IP_ADDRLEN);
+
+        printf(" ip is %s %s\n", sender_ip,receiver_ip);
 }
 

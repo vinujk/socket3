@@ -52,7 +52,7 @@ void delete_timer(timer_t *timer_id) {
         exit(EXIT_FAILURE);
     }
     timer_id = 0;
-    log_message(" timer delete sucessfully %p \n", timer_id);
+    printf(" timer delete sucessfully %p \n", timer_id);
 }
 
 //Timer event handler for seding PATH message
@@ -65,17 +65,17 @@ void path_timer_handler(union sigval sv) {
     struct session* prev = NULL;
     temp = resv_head;
 
-    log_message("++++++++path timer handler \n");
+    printf("++++++++path timer handler \n");
     while(temp != NULL) {
 
-        log_message(" temp->dest = %d tunnel_id = %d\n", temp->dest, temp->tunnel_id);
+        printf(" temp->dest = %d tunnel_id = %d\n", temp->dest, temp->tunnel_id);
         if(temp->dest && !temp->del) {
             send_path_message(sock, temp->tunnel_id);
         }
 
         if((now - temp->last_path_time) > TIMEOUT) {
             pthread_mutex_lock(&resv_tree_mutex);
-            log_message("RSVP path session expired delete tunnel id %d from resv tree", temp->tunnel_id);
+            printf("RSVP path session expired delete tunnel id %d from resv tree", temp->tunnel_id);
             display_tree_debug(resv_tree, 0);
             if(search_node(resv_tree, temp->tunnel_id, compare_resv_del) != NULL){
                 resv_tree = delete_node(resv_tree, temp->tunnel_id, compare_resv_del, 0);
@@ -84,19 +84,19 @@ void path_timer_handler(union sigval sv) {
             pthread_mutex_unlock(&resv_tree_mutex);
 
             if(!temp->dest || temp->del) {		
-                log_message("RSVP path session expired: %s\t-->%s\n",temp->sender, temp->receiver);
+                printf("RSVP path session expired: %s\t-->%s\n",temp->sender, temp->receiver);
                 pthread_mutex_lock(&resv_list_mutex);
                 resv_head = delete_session(resv_head, temp, prev);
                 print_session(resv_head);
                 pthread_mutex_unlock(&resv_list_mutex);
             }
         } else if((now - temp->last_path_time) < INTERVAL) {
-            log_message(" less than 30 sec\n");
+            printf(" less than 30 sec\n");
             prev = temp;
             temp = temp->next;
             continue;
         } else {
-            log_message("not received resv msg\n");
+            printf("not received resv msg\n");
         }
         prev = temp;
         temp = temp->next;
@@ -113,10 +113,10 @@ void resv_timer_handler(union sigval sv) {
     struct session* prev = NULL;
     temp = path_head;
 
-    log_message("timer handler \n");
+    printf("timer handler \n");
     while(temp != NULL) {
         if((now - temp->last_path_time) > TIMEOUT) {
-            log_message("RSVP resv session expired:  tunnel id %d %s\t-->%s\n",temp->tunnel_id, temp->sender, temp->receiver);
+            printf("RSVP resv session expired:  tunnel id %d %s\t-->%s\n",temp->tunnel_id, temp->sender, temp->receiver);
 
             //delete node
             pthread_mutex_lock(&path_tree_mutex);
@@ -135,7 +135,7 @@ void resv_timer_handler(union sigval sv) {
 
             if(temp->dest) {
                 pthread_mutex_lock(&resv_tree_mutex);
-                log_message("deleteing node and sess for tunnel id %d from resv tree", temp->tunnel_id);
+                printf("deleteing node and sess for tunnel id %d from resv tree", temp->tunnel_id);
                 display_tree_debug(resv_tree, 0);
                 if(search_node(resv_tree, temp->tunnel_id, compare_resv_del) != NULL){
                     resv_tree = delete_node(resv_tree, temp->tunnel_id, compare_resv_del, 0);
@@ -143,7 +143,7 @@ void resv_timer_handler(union sigval sv) {
                 }
                 pthread_mutex_unlock(&resv_tree_mutex);
 
-                log_message("RSVP resv session expired: %s\t-->%s\n",temp->sender, temp->receiver);
+                printf("RSVP resv session expired: %s\t-->%s\n",temp->sender, temp->receiver);
                 pthread_mutex_lock(&resv_list_mutex);
                 struct session *temp1 = resv_head;
                 struct session *prev1 = NULL;
@@ -161,16 +161,16 @@ void resv_timer_handler(union sigval sv) {
                 pthread_mutex_unlock(&resv_list_mutex);
             }
         } else if((now - temp->last_path_time) < INTERVAL) {
-            log_message(" less than 30 sec\n");
+            printf(" less than 30 sec\n");
             prev = temp;
             temp = temp->next;
             continue;
         } else {
             if(temp->dest) {
-                log_message("--------sending resv message\n");
+                printf("--------sending resv message\n");
                 send_resv_message(sock, temp->tunnel_id);
             } else {
-                log_message("not received path msg\n");
+                printf("not received path msg\n");
             }
         }
         prev = temp;
