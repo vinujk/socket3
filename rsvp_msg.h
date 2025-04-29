@@ -37,13 +37,15 @@
 #define START_SENT_SENDER_TEMP_OBJ (START_SENT_SESSION_ATTR_OBJ + sizeof(struct session_attr_object))
 #define START_RECV_SENDER_TEMP_OBJ (IP + START_SENT_SENDER_TEMP_OBJ)
 
-#define START_SENT_FILTER_SPEC_OBJ (START_SENT_TIME_OBJ + sizeof(struct Filter_spec_object))
+#define PATH_PACKET_SIZE (START_SENT_SENDER_TEMP_OBJ + sizeof(struct sender_temp_object))
+
+#define START_SENT_FILTER_SPEC_OBJ (START_SENT_TIME_OBJ + sizeof(struct time_object))
 #define START_RECV_FILTER_SPEC_OBJ (IP + START_SENT_FILTER_SPEC_OBJ)
 
-#define START_SENT_LABEL (START_SENT_FILTER_SPEC_OBJ + sizeof(struct label_object))
-#define START_RECV_LABEL (IP + START_SENT_LABEL) 
+#define START_SENT_LABEL (START_SENT_FILTER_SPEC_OBJ + sizeof(struct Filter_spec_object))
+#define START_RECV_LABEL (IP + START_SENT_LABEL)
 
-
+#define RESV_PACKET_SIZE (START_SENT_LABEL + sizeof(struct label_object))
 
 // RSVP Common Header (Simplified)
 struct rsvp_header {
@@ -93,7 +95,20 @@ struct time_object {
     uint32_t interval;
 };
 
+struct sub_object {
+	uint8_t hop_type;
+	uint8_t length;
+	struct in_addr nexthop_ip;
+	uint8_t prefix_len;
+	uint8_t reserved;
+};
 
+//Explicit route 
+struct explicit_rotue {
+	struct class_obj class_obj;
+	struct sub_object sub;
+};
+	
 // Session Attribute Object for PATH Message
 struct session_attr_object {
     struct class_obj class_obj;
@@ -137,12 +152,13 @@ struct Filter_spec_object {
 
 
 
-void send_path_message(int, struct in_addr, struct in_addr, uint16_t);
-void send_resv_message(int, struct in_addr, struct in_addr, uint16_t);
+void send_path_message(int, uint16_t);
+void send_resv_message(int, uint16_t);
 void receive_resv_message(int, char[], struct sockaddr_in);
 void receive_path_message(int, char[], struct sockaddr_in);
 void get_resv_class_obj(int[]);
 void get_path_class_obj(int[]);
 int dst_reached(char []);
 void get_ip(char[], char[], char [], uint16_t *);
-extern int get_nexthop(const char *, const char *);
+extern int get_nexthop(const char *, const char *, uint8_t*, const char *, uint32_t*);
+extern int get_srcip(const char *, const char *, uint32_t*);
