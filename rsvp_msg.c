@@ -308,12 +308,11 @@ void receive_resv_message(int sock, char buffer[], struct sockaddr_in sender_add
     struct class_obj *class_obj;
     int class_obj_arr[10]; 
     int i = 0;
-    char src_ip[16], dst_ip[16];
+    char src_ip[16], dst_ip[16], d_ip[16], n_ip[16];;
     struct in_addr sender_ip, receiver_ip;
-    char d_ip[16], n_ip[16];
     uint16_t tunnel_id;
     db_node *temp = NULL;
-    uint8_t new_insert;
+    uint8_t new_insert = 0;
 
     struct session_object *session_obj = (struct session_object*)(buffer + START_RECV_SESSION_OBJ);
     struct label_object *label_obj = (struct label_object*)(buffer + START_RECV_LABEL);
@@ -361,10 +360,10 @@ void receive_resv_message(int sock, char buffer[], struct sockaddr_in sender_add
     struct in_addr net, mask;
         char network[16];
         mask.s_addr = htonl(~((1 << (32 - pa->prefix_len)) - 1));
-        net.s_addr = pa->dest_ip.s_addr & mask.s_addr;
+        net.s_addr = p->dest_ip.s_addr & mask.s_addr;
 
         inet_ntop(AF_INET, &net, network, 16);
-        inet_ntop(AF_INET, &pa->nexthop_ip, n_ip, 16);
+        inet_ntop(AF_INET, &p->srcip, n_ip, 16);
 
         if(strcmp(inet_ntoa(p->nexthop_ip),"0.0.0.0") == 0) {
             printf("****reached the source, end oF rsvp tunnel***\n");

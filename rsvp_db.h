@@ -68,6 +68,7 @@ typedef struct resv_msg {
     struct in_addr src_ip;
     struct in_addr dest_ip;
     struct in_addr nexthop_ip;
+    struct in_addr p_srcip;
     struct in_addr e_srcip;
     uint16_t tunnel_id;
     uint32_t IFH;

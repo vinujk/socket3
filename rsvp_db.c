@@ -525,12 +525,14 @@ void display_tree_debug(db_node *node, uint8_t msg) {
         inet_ntop(AF_INET, &r->src_ip, source_ip, 16);
         inet_ntop(AF_INET, &r->dest_ip, destination_ip, 16);
         inet_ntop(AF_INET, &r->nexthop_ip, next_hop_ip, 16);
+	inet_ntop(AF_INET, &r->p_srcip, Psrcip, 16);
 	inet_ntop(AF_INET, &r->e_srcip, Esrcip, 16);
-        log_message("Tunnel ID: %u, Src: %s, Dest: %s, Next Hop: %s, Esrcip = %s, prefix_len: %d, In_label: %d, Out_label: %d\n",
+        log_message("Tunnel ID: %u, Src: %s, Dest: %s, Next Hop: %s, Psrcip = %s Esrcip = %s, prefix_len: %d, In_label: %d, Out_label: %d\n",
                 r->tunnel_id,
                 source_ip,
                 destination_ip,
                 next_hop_ip,
+                Psrcip,
 		Esrcip,
                 r->prefix_len,
                 (r->in_label),
@@ -610,6 +612,7 @@ db_node* resv_tree_insert(db_node* resv_tree, char buffer[], struct in_addr p_nh
     p->src_ip = (session_obj->src_ip);
     p->dest_ip = (session_obj->dst_ip);
     p->nexthop_ip = p_nhip; 
+    p->p_srcip = hop_obj->next_hop;
     p->interval = time_obj->interval;
 
     inet_ntop(AF_INET, &p->nexthop_ip, nhip, INET_ADDRSTRLEN);
